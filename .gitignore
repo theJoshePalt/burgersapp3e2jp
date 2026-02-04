@@ -43,3 +43,6 @@ app-example
 /android
 
 .env
+google-services.json
+node_modules/
+service-account.json
