@@ -45,3 +45,5 @@ app-example
 .env
 google-services.json
 service-account.json
+eas.json
+app.json
