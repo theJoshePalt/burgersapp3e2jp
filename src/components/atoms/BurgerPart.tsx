@@ -1,33 +1,27 @@
 import React, { useMemo, useEffect } from 'react';
 import { useGLTF } from '@react-three/drei/native';
 import { useSpring, animated } from '@react-spring/three';
-import burgerModelPath from '../../assets/models/burger.glb'; // Asegúrate que la ruta sea correcta
+import burgerModelPath from '../../assets/models/burger.glb';
 
-// Truco para evitar el error de TypeScript que mencionaste antes
 const AnimatedPrimitive = animated('primitive') as any;
 
 interface BurgerPartProps {
   visible: boolean;
-  positionY: number;
-  closedHeight: number;
+  positionY: number;    // Altura de "caída"
+  closedHeight: number; // Altura de "compactación"
   partName: string;
-  isFinished: boolean;
-  isEaten: boolean;
+  isFinished: boolean;  // Trigger para compactar (Paso 5)
+  isEaten: boolean;     // Trigger para escala 0
 }
 
 export default function BurgerPart({ visible, positionY, closedHeight, partName, isFinished, isEaten }: BurgerPartProps) {
-  // 1. CARGA: Traemos el modelo .glb
   const { scene } = useGLTF(burgerModelPath) as any;
-
-  // 2. CLONACIÓN: Usamos useMemo para que cada ingrediente sea una copia única
   const clonedScene = useMemo(() => scene.clone(), [scene]);
   
-  // 3. FILTRADO: Solo hacemos visible la pieza que coincide con el nombre
   useEffect(() => {
     if (clonedScene) {
       clonedScene.traverse((child: any) => {
         if (child.isMesh) {
-          // Si el nombre del mesh en Blender incluye el partName (ej: 'Cube001')
           child.visible = child.name.includes(partName);
           child.castShadow = true;
           child.receiveShadow = true;
@@ -36,11 +30,26 @@ export default function BurgerPart({ visible, positionY, closedHeight, partName,
     }
   }, [clonedScene, partName]);
 
-  // 4. ANIMACIÓN (Fase 5 preliminar):
+  // --- FASE 5: LAS ANIMACIONES ---
   const { pos, scale } = useSpring({
-    pos: isFinished ? [0, closedHeight, 0] : (visible ? [0, positionY, 0] : [0, positionY + 5, 0]),
+    // 1. Efecto Caída + 2. Compactación Final
+    // Si isFinished es true, usamos closedHeight (apretada)
+    // Si no, si es visible, usamos positionY (su posición normal)
+    // Si no es visible, la mandamos 5 unidades arriba (para que caiga)
+    pos: isFinished 
+      ? [0, closedHeight, 0] 
+      : visible ? [0, positionY, 0] : [0, positionY + 5, 0],
+
+    // 3. El "Efecto Comida"
+    // Si isEaten es true, escala a 0. Si no, escala normal a 1.5
     scale: isEaten ? 0 : 1.5,
-    config: { mass: 1, tension: 180, friction: 22 },
+
+    // Configuración de rebote elástico (Tension y Friction)
+    config: { 
+      mass: 1, 
+      tension: 170, // Un poco de rebote
+      friction: 26 
+    },
   });
 
   if (!visible && !isEaten) return null;
