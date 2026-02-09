@@ -1,23 +1,53 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import BurgerCanvas from '../molecules/BurgerCanvas';
-
+import { supabase } from '../../../lib/core/supabase/client.supabase'; // Importa tu cliente
 export default function BurgerBuilder() {
-  const [step, setStep] = useState(0);
-  const [isEaten, setIsEaten] = useState(false);
-
-  const handleNextStep = () => {
-    if (step < 5) {
-      setStep(step + 1);
-    } else {
-      // AQUÍ VENDRÁ LA LÓGICA DE SUPABASE Y NOTIFICACIONES
-      setIsEaten(true);
-      setTimeout(() => {
-        setStep(0);
-        setIsEaten(false);
-      }, 1000);
-    }
-  };
+    const [step, setStep] = useState(0);
+    const [isEaten, setIsEaten] = useState(false);
+    const [loading, setLoading] = useState(false);
+  
+    const saveOrderInSupabase = async () => {
+      setLoading(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        const { error } = await supabase
+          .from('orders') // Asegúrate de tener esta tabla en Supabase
+          .insert([
+            { 
+              user_id: user?.id, 
+              status: 'completed',
+              details: 'Hamburguesa 3D Bonjour' 
+            },
+          ]);
+  
+        if (error) throw error;
+        console.log("Orden guardada con éxito");
+      } catch (error) {
+        console.error("Error al guardar orden:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    const handleNextStep = async () => {
+      if (step < 5) {
+        setStep(step + 1);
+      } else {
+        // 1. Guardamos en Supabase antes de que desaparezca
+        await saveOrderInSupabase();
+        
+        // 2. Animación de comer
+        setIsEaten(true);
+        
+        // 3. Reset
+        setTimeout(() => {
+          setStep(0);
+          setIsEaten(false);
+        }, 1000);
+      }
+    };
 
   return (
     <View style={styles.container}>
