@@ -29,7 +29,9 @@
     },
     "plugins": [
       "expo-router",
-      "expo-updates"
+      "expo-updates",
+      "expo-notifications",
+      "expo-asset"
     ],
     "updates": {
       "url": "https://u.expo.dev/840f1e02-21a4-4c2d-9b96-b6bf48833145",
